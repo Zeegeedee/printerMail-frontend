@@ -52,11 +52,6 @@ socket.onmessage = function(event) {
     if (incomingText === "[+] SUCCESS: Logged in!") {
         console.log("🔓 Login verified by Python! Booting messenger features...");
 
-        loggedInUser = choiceName.value.toLowerCase().trim();
-
-        choiceName.value = "";
-        choicePassword.value = "";
-        
         document.getElementById("authGate").style.display = "none";
         document.getElementById("appContainer").style.display = "block";
         
@@ -65,6 +60,9 @@ socket.onmessage = function(event) {
 
         const buttons = document.querySelectorAll("#userList button");
         buttons.forEach(btn => btn.disabled = false);
+
+        choiceName.value = "";
+        choicePassword.value = "";
         return;
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
@@ -81,7 +79,7 @@ socket.onmessage = function(event) {
         document.getElementById("authDisplayName").style.display = "none";
         document.getElementById("chooseDisplayNameLabel").style.display = "none";
     }
-    else if (incomingText.startsWith("[-] ERROR:")) {
+    else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
         alert(incomingText);
         authErrorMessage.innerText = incomingText;
         choicePassword.value = "";
@@ -234,7 +232,9 @@ choiceDropdown.addEventListener('change', function() {
     }
 });
 
-function runAuthVerification() {
+function runAuthVerification(event) {
+    if (event) event.preventDefault();
+    
     let authAction = choiceDropdown.value;
     let authUsername = choiceName.value.toLowerCase().trim();
     let authPassword =  choicePassword.value;
@@ -254,13 +254,16 @@ function runAuthVerification() {
         socket.send(jsonStringedAuthPackage);
     }
     else if (authAction === "login") {
+        loggedInUser = authUsername;
         const loginPackage = {"action": authAction, "user": authUsername, "pass": authPassword};
         const jsonStringedLoginPackage = JSON.stringify(loginPackage);
         socket.send(jsonStringedLoginPackage);
     }
 }
 const submitAuthCredentials = document.getElementById("authSubmitButton");
-submitAuthCredentials.addEventListener('click', runAuthVerification);
+submitAuthCredentials.addEventListener('click', function(e) {
+    runAuthVerification(e);
+});
 
 const userSearchInput = document.getElementById("userSearchInput");
 if (userSearchInput) {
