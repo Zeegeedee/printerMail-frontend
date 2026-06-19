@@ -2,16 +2,14 @@ let currentChatPartner = "";
 let loggedInUser = "";
 const localChatLogs = {};
 
-// Automatically determine the secure Hugging Face Space URL and attach the /ws route
+const HF_SPACE_HOST = "zeegeedee-printermail-backend.hf.space"; 
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const host = window.location.host;
-const socket = new WebSocket(`${protocol}//${host}/ws`);
+const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
 
 socket.onopen = function() {
     console.log("[+] Connected! Welcome to the Python server.");
 };
 
-// Forges text boxes on the web page
 socket.onmessage = function(event) {
     let incomingText = event.data;
 
@@ -107,7 +105,6 @@ socket.onmessage = function(event) {
     }
 };
 
-// Build clickable sidebar buttons
 const searchResultsContainer = document.getElementById("searchResultsContainer");
 
 function renderDiscoveredUsers(usersArray) {
@@ -133,7 +130,7 @@ function renderDiscoveredUsers(usersArray) {
                     action: "request_chat_history",
                     target: friend.username
                 }
-                jsonStringedChatHistoryDataRequest = JSON.stringify(chatHistoryDataRequest)
+                let jsonStringedChatHistoryDataRequest = JSON.stringify(chatHistoryDataRequest)
                 socket.send(jsonStringedChatHistoryDataRequest)
                 console.log(`Target recipient: ${currentChatPartner}`);
             }
@@ -150,7 +147,6 @@ function renderDiscoveredUsers(usersArray) {
     });
 }
 
-// Packages and directs the inputs to Python
 function processInputs() {
     let generatedUUID = crypto.randomUUID();
     let numericTimestamp = Date.now();
@@ -164,7 +160,6 @@ function processInputs() {
         target: currentChatPartner,
         message: messageValue,
         timestamp: numericTimestamp
-        
     };
     let jsonOutput = JSON.stringify(dataBundle);
 
@@ -185,9 +180,6 @@ function processInputs() {
     console.log(jsonOutput);
 }
 
-const sendButton = document.getElementById("sendMessageButton");
-sendButton.addEventListener('click', processInputs);
-
 const choiceDropdown = document.getElementById("authAction");
 const choiceName = document.getElementById("authUsername");
 const choicePassword = document.getElementById("authPassword");
@@ -196,6 +188,9 @@ const choiceConfirmPassword = document.getElementById("authConfirmPassword");
 const chooseDisplayNameLabel = document.getElementById("chooseDisplayNameLabel")
 const choiceDisplayName = document.getElementById("authDisplayName")
 const authErrorMessage = document.getElementById("authErrorMessage");
+
+const sendButton = document.getElementById("sendMessageButton");
+sendButton.addEventListener('click', processInputs);
 
 const chatsModeButton = document.getElementById("chatsModeButton");
 const searchModeButton = document.getElementById("searchModeButton");
@@ -219,7 +214,6 @@ if (searchModeButton) {
     });
 }
 
-// Watch for toggle selection changes between login and signup
 choiceDropdown.addEventListener('change', function() {
     if (choiceDropdown.value === "login") {
         choiceConfirmPassword.style.display = "none";
@@ -290,7 +284,6 @@ if (messagingSection && searchSection) {
     searchSection.style.display = "none";
 }
 
-// Initial application boot state setup
 document.getElementById("appContainer").style.display = "none";
 document.getElementById("messageInput").disabled = true;
 document.getElementById("sendMessageButton").disabled = true;
