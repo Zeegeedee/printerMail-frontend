@@ -41,7 +41,24 @@ socket.onmessage = function(event) {
                     }
                     oldBubble.innerText = msgPrefix + msg.message;
                     document.getElementById("chatHistory").appendChild(oldBubble);
-                })
+                });
+                return;
+            }
+            else if (parsedData.action === "new_message") {
+                let senderName = parsedData.sender;
+                let textContent = parsedData.message;
+
+                if (!localChatLogs[senderName]) {
+                    localChatLogs[senderName] = [];
+                }
+                localChatLogs[senderName].push(`${senderName}: ${textContent}`);
+
+                if (currentChatPartner === senderName) {
+                    let chatBubble = document.createElement("div");
+                    chatBubble.innerText = `${senderName}: ${textContent}`;
+                    document.getElementById("chatHistory").appendChild(chatBubble);
+                }
+                return;
             }
 
         } catch (error) {
@@ -52,6 +69,11 @@ socket.onmessage = function(event) {
     if (incomingText === "[+] SUCCESS: Logged in!") {
         console.log("🔓 Login verified by Python! Booting messenger features...");
 
+        loggedInUser = choiceName.value.toLowerCase().trim();
+
+        choiceName.value = "";
+        choicePassword.value = "";
+        
         document.getElementById("authGate").style.display = "none";
         document.getElementById("appContainer").style.display = "block";
         
@@ -60,9 +82,6 @@ socket.onmessage = function(event) {
 
         const buttons = document.querySelectorAll("#userList button");
         buttons.forEach(btn => btn.disabled = false);
-
-        choiceName.value = "";
-        choicePassword.value = "";
         return;
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
@@ -78,28 +97,15 @@ socket.onmessage = function(event) {
         document.getElementById("confirmPasswordLabel").style.display = "none";
         document.getElementById("authDisplayName").style.display = "none";
         document.getElementById("chooseDisplayNameLabel").style.display = "none";
+        return;
     }
     else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
         alert(incomingText);
+        authErrorMessage.style.display = "block";
         authErrorMessage.innerText = incomingText;
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
-    }
-    else {
-        let delimiterIndex = incomingText.indexOf(":");
-        if (delimiterIndex === -1) return;
-        let senderName = incomingText.substring(0, delimiterIndex).trim();
-
-        if (!localChatLogs[senderName]) {
-            localChatLogs[senderName] = [];
-        }
-        localChatLogs[senderName].push(incomingText);
-
-        if (currentChatPartner === senderName) {
-            let chatBubble = document.createElement("div");
-            chatBubble.innerText = incomingText;
-            document.getElementById("chatHistory").appendChild(chatBubble);
-        }
+        return;
     }
 };
 
@@ -145,7 +151,8 @@ function renderDiscoveredUsers(usersArray) {
     });
 }
 
-function processInputs() {
+function processInputs(event) {
+    if (event) event.preventDefault();
     let generatedUUID = crypto.randomUUID();
     let numericTimestamp = Date.now();
     const messageBox = document.getElementById("messageInput");
@@ -174,7 +181,6 @@ function processInputs() {
         socket.send(jsonOutput);
     }
     messageBox.value = "";
-
     console.log(jsonOutput);
 }
 
@@ -215,18 +221,14 @@ if (searchModeButton) {
 choiceDropdown.addEventListener('change', function() {
     if (choiceDropdown.value === "login") {
         choiceConfirmPassword.style.display = "none";
-        choiceConfirmPassword.disabled = true;
         confirmPasswordLabel.style.display = "none";
         choiceDisplayName.style.display = "none";
-        choiceDisplayName.disabled = true;
         chooseDisplayNameLabel.style.display = "none";
         authErrorMessage.innerText = "";
     } else {
         choiceConfirmPassword.style.display = "block";
-        choiceConfirmPassword.disabled = false;
         confirmPasswordLabel.style.display = "";
         choiceDisplayName.style.display = "block";
-        choiceDisplayName.disabled = false;
         chooseDisplayNameLabel.style.display = "";
         authErrorMessage.innerText = "";
     }
@@ -234,36 +236,32 @@ choiceDropdown.addEventListener('change', function() {
 
 function runAuthVerification(event) {
     if (event) event.preventDefault();
-    
     let authAction = choiceDropdown.value;
     let authUsername = choiceName.value.toLowerCase().trim();
     let authPassword =  choicePassword.value;
     let authConfirmPassword = choiceConfirmPassword.value;
     let authDisplayName = choiceDisplayName.value;
 
-    if (authAction === "signup" && authPassword !== authConfirmPassword) {
-        alert("[-] Passwords do not match. Please check your typing.");
-        authErrorMessage.innerText = "[-] Passwords do not match. Please check your typing.";
-        choiceName.value = "";
-        choicePassword.value = "";
-        choiceConfirmPassword.value = "";
-    }
-    else if (authAction === "signup" && authPassword == authConfirmPassword) {
+    if (authAction === "signup") {
+        if (authPassword !== authConfirmPassword) {
+            authErrorMessage.style.display = "block";
+            authErrorMessage.innerText = "[-] Passwords do not match. Please check your typing.";
+            return;
+        }
         const authPackage = {"action": authAction, "display": authDisplayName, "user": authUsername, "pass": authPassword};
         const jsonStringedAuthPackage = JSON.stringify(authPackage);
+        authErrorMessage.style.display = "none";
         socket.send(jsonStringedAuthPackage);
     }
     else if (authAction === "login") {
-        loggedInUser = authUsername;
         const loginPackage = {"action": authAction, "user": authUsername, "pass": authPassword};
         const jsonStringedLoginPackage = JSON.stringify(loginPackage);
         socket.send(jsonStringedLoginPackage);
     }
 }
+
 const submitAuthCredentials = document.getElementById("authSubmitButton");
-submitAuthCredentials.addEventListener('click', function(e) {
-    runAuthVerification(e);
-});
+submitAuthCredentials.addEventListener('click', runAuthVerification);
 
 const userSearchInput = document.getElementById("userSearchInput");
 if (userSearchInput) {
@@ -291,9 +289,8 @@ document.getElementById("appContainer").style.display = "none";
 document.getElementById("messageInput").disabled = true;
 document.getElementById("sendMessageButton").disabled = true;
 document.getElementById("confirmPasswordLabel").style.display = "none";
-document.getElementById("authConfirmPassword").disabled = true;
 document.getElementById("authConfirmPassword").style.display = "none";
 document.getElementById("authDisplayName").style.display = "none";
 document.getElementById("chooseDisplayNameLabel").style.display = "none";
-document.getElementById("authErrorMessage").style.display = "none";
+authErrorMessage.style.display = "none";
 searchSection.style.display = "none";
