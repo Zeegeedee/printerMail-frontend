@@ -5,68 +5,64 @@
     <meta charset="UTF-8">
 </head>
 <body>
-    <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-        <h1>Website Unavailable</h1>
-        <p>This site is down for maintenance while I focus on The Odin Project. See you soon!</p>
+    <div id="authGate">
+        <div>
+            <label>Action:</label>
+            <select id="authAction">
+                <option value="login">Log In</option>
+                <option value="signup">Sign Up</option>
+            </select>
+        </div>
+        <div>
+            <label id="chooseDisplayNameLabel">Display Name:</label>
+            <input id="authDisplayName" type="text" maxlength="20" placeholder="Max 20 characters...">
+        </div>
+        <div>
+            <label>Username:</label>
+            <input id="authUsername" type="text" maxlength="30" placeholder="Max 30 characters...">
+        </div>
+        <div>
+            <label>Password:</label>
+            <input id="authPassword" type="password" maxlength="64" placeholder="Min: 8 chars, Max: 64...">
+        </div>
+        <div>
+            <label id="confirmPasswordLabel">Confirm Password:</label>
+            <input id="authConfirmPassword" type="password">
+        </div>
+        <p id="authErrorMessage" style="color: red; font-size: 14px; margin: 10px 0; font-weight: bold;">hi</p>
+        <button id="authSubmitButton">Confirm</button>
+
     </div>
-    <template>
-        <div id="authGate">
-            <div>
-                <label>Action:</label>
-                <select id="authAction">
-                    <option value="login">Log In</option>
-                    <option value="signup">Sign Up</option>
-                </select>
-            </div>
-            <div>
-                <label id ="chooseDisplayNameLabel">Display Name:</label>
-                <input id="authDisplayName" type="text" maxlength="20" placeholder="Max 20 characters...">
-            </div>
-            <div>
-                <label>Username:</label>
-                <input id="authUsername" type="text" maxlength="30" placeholder="Max 30 characters...">
-            </div>
-            <div>
-                <label>Password:</label>
-                <input id="authPassword" type="password" maxlength="64" placeholder="Min: 8 chars, Max: 64...">
-            </div>
-            <div>
-                <label id="confirmPasswordLabel">Confirm Password:</label>
-                <input id="authConfirmPassword" type="password">
-            </div>
-            <button id="authSubmitButton">Confirm</button>
-        </div>
-        <p id="authErrorMessage" style="color: red; font-size: 14px; margin: 10px 0; font-weight: bold;"></p>
-        <div id="appContainer">
-            <div id="modeTabs">
-                <button id="chatsModeButton">Chats</button>
-                <button id="searchModeButton">Search Users</button>
-            </div>
 
-            <div id="messagingSection">
-                <div id="sidebar">
-                    <h3>Active Chats:</h3>
-                    <div id="userList"></div>
+    <div id="appContainer">
+        <div id="modeTabs">
+            <button id="chatsModeButton">Chats</button>
+            <button id="searchModeButton">Search Users</button>
+        </div>
+
+        <div id="messagingSection">
+            <div id="sidebar">
+                <h3>Active Chats:</h3>
+                <div id="userList"></div>
+            </div>
+            <div id="mainChat">
+                <div id="chatHistory">
+                    <!-- Javascript will add the chat history here automatically based on clicked user -->
                 </div>
-                <div id="mainChat">
-                    <div id="chatHistory">
-                        <!-- Javascript will add the chat history here automatically based on clicked user -->
-                    </div>
-                    <div id="inputTray">
-                        <input type="text" id="messageInput" maxlength="1000" placeholder="Type a message... (max: 1000 characters)">
-                        <button id="sendMessageButton">➡️</button>
-                    </div>
+                <div id="inputTray">
+                    <input type="text" id="messageInput" maxlength="1000" placeholder="Type a message... (max: 1000 characters)">
+                    <button id="sendMessageButton">➡️</button>
                 </div>
             </div>
-
-            <div id="searchSection">
-                <h3>Find Global Users:</h3>
-                <input id="userSearchInput" placeholder="Type a username...">
-                <!-- Javascript will add the users here automatically based on the search query recieved -->
-                <div id="searchResultsContainer"></div>
-            </div>
         </div>
-    </template>
+
+        <div id="searchSection">
+            <h3>Find Global Users:</h3>
+            <input id="userSearchInput" placeholder="Type a username...">
+            <!-- Javascript will add the users here automatically based on the search query received -->
+            <div id="searchResultsContainer"></div>
+        </div>
+    </div>
     <script src="app.js"></script>
 </body>
 </html>
