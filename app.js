@@ -73,9 +73,9 @@ socket.onmessage = function (event) {
                     line1.style.display = "block";
 
                     let line2 = document.createElement("span");
-                    line2.innerHTML = `@${username} <span style="font-size:1.1em;">${msg.message}</span>`;
+                    line2.innerHTML = `@${username} <span style="font-size:1.25em; color:black;">${msg.message}</span>`;
                     line2.style.display = "block";
-                    line2.style.color = "gray";
+                    line2.style.color = "#666";
                     line2.style.fontSize = "0.95em";
 
                     oldBubble.appendChild(line1);
@@ -104,9 +104,9 @@ socket.onmessage = function (event) {
                     line1.style.display = "block";
 
                     let line2 = document.createElement("span");
-                    line2.innerHTML = `@${senderName} <span style="font-size:1.1em;">${textContent}</span>`;
+                    line2.innerHTML = `@${senderName} <span style="font-size:1.25em; color:black;">${textContent}</span>`;
                     line2.style.display = "block";
-                    line2.style.color = "gray";
+                    line2.style.color = "#666";
                     line2.style.fontSize = "0.95em";
 
                     chatBubble.appendChild(line1);
@@ -218,9 +218,9 @@ function processInputs(event) {
     line1.style.display = "block";
 
     let line2 = document.createElement("span");
-    line2.innerHTML = `@${loggedInUser} <span style="font-size:1.1em;">${messageValue}</span>`;
+    line2.innerHTML = `@${loggedInUser} <span style="font-size:1.25em; color:black;">${messageValue}</span>`;
     line2.style.display = "block";
-    line2.style.color = "gray";
+    line2.style.color = "#666";
     line2.style.fontSize = "0.95em";
 
     chatBubble.appendChild(line1);
