@@ -71,13 +71,12 @@ socket.onmessage = function (event) {
                     let line1 = document.createElement("span");
                     line1.innerText = displayName + " • " + timeStr + " • " + msg.status;
                     line1.style.display = "block";
-                    line1.style.fontWeight = "bold";
 
                     let line2 = document.createElement("span");
-                    line2.innerText = "@" + username + " " + msg.message;
+                    line2.innerHTML = `@${username} <span style="font-size:1.1em;">${msg.message}</span>`;
                     line2.style.display = "block";
                     line2.style.color = "gray";
-                    line2.style.fontSize = "0.9em";
+                    line2.style.fontSize = "0.95em";
 
                     oldBubble.appendChild(line1);
                     oldBubble.appendChild(line2);
@@ -103,13 +102,12 @@ socket.onmessage = function (event) {
                     let line1 = document.createElement("span");
                     line1.innerText = senderDisplay + " • " + timeStr + " • " + parsedData.status;
                     line1.style.display = "block";
-                    line1.style.fontWeight = "bold";
 
                     let line2 = document.createElement("span");
-                    line2.innerText = "@" + senderName + " " + textContent;
+                    line2.innerHTML = `@${senderName} <span style="font-size:1.1em;">${textContent}</span>`;
                     line2.style.display = "block";
                     line2.style.color = "gray";
-                    line2.style.fontSize = "0.9em";
+                    line2.style.fontSize = "0.95em";
 
                     chatBubble.appendChild(line1);
                     chatBubble.appendChild(line2);
@@ -218,13 +216,12 @@ function processInputs(event) {
     let line1 = document.createElement("span");
     line1.innerText = "You • " + timeStr + " • sending...";
     line1.style.display = "block";
-    line1.style.fontWeight = "bold";
 
     let line2 = document.createElement("span");
-    line2.innerText = "@" + loggedInUser + " " + messageValue;
+    line2.innerHTML = `@${loggedInUser} <span style="font-size:1.1em;">${messageValue}</span>`;
     line2.style.display = "block";
     line2.style.color = "gray";
-    line2.style.fontSize = "0.9em";
+    line2.style.fontSize = "0.95em";
 
     chatBubble.appendChild(line1);
     chatBubble.appendChild(line2);
