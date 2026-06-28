@@ -119,6 +119,11 @@ socket.onmessage = function (event) {
                     line2.style.display = "block";
                     line2.style.color = "#666";
                     line2.style.fontSize = "0.95em";
+                    line2.style.backgroundColor = "#f0f0f0";
+                    line2.style.padding = "8px 12px";
+                    line2.style.borderRadius = "12px";
+                    line2.style.marginTop = "4px";
+
 
                     chatBubble.appendChild(line1);
                     chatBubble.appendChild(line2);
