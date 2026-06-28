@@ -93,7 +93,6 @@ socket.onmessage = function (event) {
         return;
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
-        alert(incomingText);
 
         choiceName.value = "";
         choicePassword.value = "";
@@ -108,7 +107,6 @@ socket.onmessage = function (event) {
         return;
     }
     else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
-        alert(incomingText);
         authErrorMessage.style.display = "block";
         authErrorMessage.innerText = incomingText;
         choicePassword.value = "";
