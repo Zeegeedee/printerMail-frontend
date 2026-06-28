@@ -66,30 +66,21 @@ socket.onmessage = function (event) {
                     let isMe = msg.sender === loggedInUser;
                     let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
                     let username = msg.sender;
-                    let displayNameSpan = document.createElement("span");
-                    displayNameSpan.innerText = displayName;
-                    displayNameSpan.style.display = "block";
-                    displayNameSpan.style.fontWeight = "bold";
+                    let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
-                    let usernameSpan = document.createElement("span");
-                    usernameSpan.innerText = "@" + username;
-                    usernameSpan.style.display = "block";
-                    usernameSpan.style.fontSize = "0.75em";
-                    usernameSpan.style.color = "gray";
+                    let line1 = document.createElement("span");
+                    line1.innerText = displayName + " • " + timeStr + " • " + msg.status;
+                    line1.style.display = "block";
+                    line1.style.fontWeight = "bold";
 
-                    let msgSpan = document.createElement("span");
-                    msgSpan.innerText = msg.message;
-                    msgSpan.style.display = "block";
+                    let line2 = document.createElement("span");
+                    line2.innerText = "@" + username + " " + msg.message;
+                    line2.style.display = "block";
+                    line2.style.color = "gray";
+                    line2.style.fontSize = "0.9em";
 
-                    let metaSpan = document.createElement("span");
-                    metaSpan.innerText = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT · " + msg.status;
-                    metaSpan.style.display = "block";
-                    metaSpan.style.fontSize = "0.75em";
-                    metaSpan.style.color = "gray";
-                    oldBubble.appendChild(displayNameSpan);
-                    oldBubble.appendChild(usernameSpan);
-                    oldBubble.appendChild(msgSpan);
-                    oldBubble.appendChild(metaSpan);
+                    oldBubble.appendChild(line1);
+                    oldBubble.appendChild(line2);
                     document.getElementById("chatHistory").appendChild(oldBubble);
                 });
                 scrollToBottom();
@@ -107,31 +98,21 @@ socket.onmessage = function (event) {
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
                     let senderDisplay = parsedData.senderDisplayname || senderName;
+                    let timeStr = new Date(parsedData.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
-                    let nameSpan = document.createElement("span");
-                    nameSpan.innerText = senderDisplay;
-                    nameSpan.style.display = "block";
-                    nameSpan.style.fontWeight = "bold";
+                    let line1 = document.createElement("span");
+                    line1.innerText = senderDisplay + " • " + timeStr + " • " + parsedData.status;
+                    line1.style.display = "block";
+                    line1.style.fontWeight = "bold";
 
-                    let atSpan = document.createElement("span");
-                    atSpan.innerText = "@" + senderName;
-                    atSpan.style.display = "block";
-                    atSpan.style.fontSize = "0.75em";
-                    atSpan.style.color = "gray";
+                    let line2 = document.createElement("span");
+                    line2.innerText = "@" + senderName + " " + textContent;
+                    line2.style.display = "block";
+                    line2.style.color = "gray";
+                    line2.style.fontSize = "0.9em";
 
-                    let msgSpan = document.createElement("span");
-                    msgSpan.innerText = textContent;
-                    msgSpan.style.display = "block";
-
-                    let metaSpan = document.createElement("span");
-                    metaSpan.innerText = new Date(parsedData.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT · " + parsedData.status;
-                    metaSpan.style.display = "block";
-                    metaSpan.style.fontSize = "0.75em";
-                    metaSpan.style.color = "gray";
-                    chatBubble.appendChild(nameSpan);
-                    chatBubble.appendChild(atSpan);
-                    chatBubble.appendChild(msgSpan);
-                    chatBubble.appendChild(metaSpan);
+                    chatBubble.appendChild(line1);
+                    chatBubble.appendChild(line2);
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
@@ -232,31 +213,21 @@ function processInputs(event) {
     localChatLogs[currentChatPartner].push(`You: ${messageValue}`);
 
     let chatBubble = document.createElement("div");
-    let usernameSpan = document.createElement("span");
-    usernameSpan.innerText = "You";
-    usernameSpan.style.display = "block";
-    usernameSpan.style.fontWeight = "bold";
+    let timeStr = new Date(Date.now()).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
-    let displayNameSpan = document.createElement("span");
-    displayNameSpan.innerText = "@" + loggedInUser;
-    displayNameSpan.style.display = "block";
-    displayNameSpan.style.fontSize = "0.75em";
-    displayNameSpan.style.color = "gray";
+    let line1 = document.createElement("span");
+    line1.innerText = "You • " + timeStr + " • sending...";
+    line1.style.display = "block";
+    line1.style.fontWeight = "bold";
 
-    let msgSpan = document.createElement("span");
-    msgSpan.innerText = messageValue;
-    msgSpan.style.display = "block";
+    let line2 = document.createElement("span");
+    line2.innerText = "@" + loggedInUser + " " + messageValue;
+    line2.style.display = "block";
+    line2.style.color = "gray";
+    line2.style.fontSize = "0.9em";
 
-    let metaSpan = document.createElement("span");
-    metaSpan.innerText = new Date(Date.now()).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT · sending...";
-    metaSpan.style.display = "block";
-    metaSpan.style.fontSize = "0.75em";
-    metaSpan.style.color = "gray";
-
-    chatBubble.appendChild(usernameSpan);
-    chatBubble.appendChild(displayNameSpan);
-    chatBubble.appendChild(msgSpan);
-    chatBubble.appendChild(metaSpan);
+    chatBubble.appendChild(line1);
+    chatBubble.appendChild(line2);
     document.getElementById("chatHistory").appendChild(chatBubble);
     scrollToBottom();
 
