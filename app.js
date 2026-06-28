@@ -44,7 +44,7 @@ socket.onmessage = function (event) {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
                     let oldBubble = document.createElement("div");
-                    let msgPrefix = msg.sender === loggedInUser ? "You: " : msg.sender + ": ";
+                    let msgPrefix = msg.sender === loggedInUser ? "You: " : (msg.display_name || msg.sender) + ": ";
                     oldBubble.innerText = msgPrefix + msg.message;
                     document.getElementById("chatHistory").appendChild(oldBubble);
                 });
@@ -53,7 +53,6 @@ socket.onmessage = function (event) {
             }
             else if (parsedData.action === "new_message") {
                 let senderName = parsedData.sender;
-                let senderDisplayName = parsedData.senderDisplayname 
                 let textContent = parsedData.message;
 
                 if (!localChatLogs[senderName]) {
@@ -63,7 +62,7 @@ socket.onmessage = function (event) {
 
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
-                    chatBubble.innerText = `${senderDisplayName}: ${textContent}`;
+                    chatBubble.innerText = `${senderName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
@@ -94,6 +93,8 @@ socket.onmessage = function (event) {
         return;
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
+        alert(incomingText);
+
         choiceName.value = "";
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
@@ -107,6 +108,7 @@ socket.onmessage = function (event) {
         return;
     }
     else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
+        alert(incomingText);
         authErrorMessage.style.display = "block";
         authErrorMessage.innerText = incomingText;
         choicePassword.value = "";
