@@ -4,21 +4,22 @@ const localChatLogs = {};
 
 const HF_SPACE_HOST = "zeegeedee-printermail-backend.hf.space";
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const socket = new WebSocket(`${protocol} ${HF_SPACE_HOST}/ws`);
+const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
 
 socket.onopen = function () {
     console.log("[+] Connected! Welcome to the Python server.");
 };
 
-  
 socket.onerror = function (error) {
     console.error("[-] WebSocket error:", error);
     alert("Connection error. Please refresh the page and try again.");
 };
 
-socket.onclose = function () {
-    console.warn("[-] WebSocket connection closed.");
-    alert("You have been disconnected. Please refresh the page to reconnect.");
+socket.onclose = function (event) {
+    console.warn("[-] WebSocket connection closed. Code:", event.code);
+    if (event.code !== 1000 && event.code !== 1001) {
+        alert("You have been disconnected unexpectedly. Please refresh the page to reconnect.");
+    }
 };
 
 socket.onmessage = function (event) {
@@ -37,7 +38,7 @@ socket.onmessage = function (event) {
                 if (friendRequestConfirmationWindow) {
                     socket.send(JSON.stringify({ "action": "accept_friend_request", "from_user": parsedData.sender }));
                 }
-                return;   
+                return;
             }
             else if (parsedData.action === "load_history_results") {
                 document.getElementById("chatHistory").innerHTML = "";
@@ -47,7 +48,7 @@ socket.onmessage = function (event) {
                     oldBubble.innerText = msgPrefix + msg.message;
                     document.getElementById("chatHistory").appendChild(oldBubble);
                 });
-                scrollToBottom();   
+                scrollToBottom();
                 return;
             }
             else if (parsedData.action === "new_message") {
@@ -63,7 +64,7 @@ socket.onmessage = function (event) {
                     let chatBubble = document.createElement("div");
                     chatBubble.innerText = `${senderName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
-                    scrollToBottom();   
+                    scrollToBottom();
                 }
                 return;
             }
@@ -76,8 +77,7 @@ socket.onmessage = function (event) {
     if (incomingText === "[+] SUCCESS: Logged in!") {
         console.log("🔓 Login verified by Python! Booting messenger features...");
 
-          
-        loggedInUser = choiceName.value.toLowerCase().trim();
+            loggedInUser = choiceName.value.toLowerCase().trim();
 
         choiceName.value = "";
         choicePassword.value = "";
@@ -117,7 +117,6 @@ socket.onmessage = function (event) {
     }
 };
 
-
 function scrollToBottom() {
     const chatHistory = document.getElementById("chatHistory");
     chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -136,7 +135,7 @@ function renderDiscoveredUsers(usersArray) {
         userButton.addEventListener('click', function () {
             if (searchSection && searchSection.style.display === "block") {
                 currentChatPartner = friend.username;
-                document.getElementById("chatHistory").innerHTML = ""; 
+                document.getElementById("chatHistory").innerHTML = "";
 
                 if (messagingSection && searchSection) {
                     messagingSection.style.display = "block";
@@ -169,7 +168,6 @@ function processInputs(event) {
 
     if (currentChatPartner === "" || messageValue === "") return;
 
-
     let dataBundle = {
         action: "send_chat_message",
         target: currentChatPartner,
@@ -185,7 +183,7 @@ function processInputs(event) {
     let chatBubble = document.createElement("div");
     chatBubble.innerText = `You: ${messageValue}`;
     document.getElementById("chatHistory").appendChild(chatBubble);
-    scrollToBottom(); 
+    scrollToBottom();
 
     socket.send(JSON.stringify(dataBundle));
     messageBox.value = "";
@@ -202,7 +200,6 @@ const authErrorMessage = document.getElementById("authErrorMessage");
 
 const sendButton = document.getElementById("sendMessageButton");
 sendButton.addEventListener('click', processInputs);
-
 
 document.getElementById("messageInput").addEventListener('keydown', function (event) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -272,7 +269,6 @@ function runAuthVerification(event) {
         socket.send(JSON.stringify(loginPackage));
     }
 }
-
 
 [choiceName, choicePassword, choiceConfirmPassword, choiceDisplayName].forEach(input => {
     if (input) {
