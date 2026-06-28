@@ -8,6 +8,10 @@ const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
 
 socket.onopen = function () {
     console.log("[+] Connected! Welcome to the Python server.");
+    const savedToken = sessionStorage.getItem("sessionToken");
+    if (savedToken) {
+        socket.send(JSON.stringify({ action: "token_login", token: savedToken }));
+    }
 };
 
 socket.onerror = function (error) {
@@ -18,6 +22,7 @@ socket.onerror = function (error) {
 socket.onclose = function (event) {
     console.warn("[-] WebSocket connection closed. Code:", event.code);
     if (event.code !== 1000 && event.code !== 1001) {
+        sessionStorage.clear();
         alert("You have been disconnected unexpectedly. Please refresh the page to reconnect.");
     }
 };
@@ -29,7 +34,21 @@ socket.onmessage = function (event) {
         try {
             let parsedData = JSON.parse(incomingText);
 
-            if (parsedData.action === "search_results") {
+            if (parsedData.action === "login_success") {
+                loggedInUser = parsedData.user;
+                sessionStorage.setItem("sessionToken", parsedData.token);
+                sessionStorage.setItem("sessionUser", parsedData.user);
+                choiceName.value = "";
+                choicePassword.value = "";
+                document.getElementById("authGate").style.display = "none";
+                document.getElementById("appContainer").style.display = "block";
+                document.getElementById("messageInput").disabled = false;
+                document.getElementById("sendMessageButton").disabled = false;
+                const buttons = document.querySelectorAll("#userList button");
+                buttons.forEach(btn => btn.disabled = false);
+                return;
+            }
+            else if (parsedData.action === "search_results") {
                 renderDiscoveredUsers(parsedData.results);
                 return;
             }
@@ -54,16 +73,15 @@ socket.onmessage = function (event) {
             else if (parsedData.action === "new_message") {
                 let senderName = parsedData.sender;
                 let textContent = parsedData.message;
-                let displayName = parsedData.display_name || senderName;
 
                 if (!localChatLogs[senderName]) {
                     localChatLogs[senderName] = [];
                 }
-                localChatLogs[senderName].push(`${displayName}: ${textContent}`);
+                localChatLogs[senderName].push(`${senderName}: ${textContent}`);
 
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
-                    chatBubble.innerText = `${displayName}: ${textContent}`;
+                    chatBubble.innerText = `${senderName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
@@ -75,26 +93,10 @@ socket.onmessage = function (event) {
         }
     }
 
-    if (incomingText === "[+] SUCCESS: Logged in!") {
-        console.log("🔓 Login verified by Python! Booting messenger features...");
-
-        loggedInUser = choiceName.value.toLowerCase().trim();
+    if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
+        alert(incomingText);
 
         choiceName.value = "";
-        choicePassword.value = "";
-
-        document.getElementById("authGate").style.display = "none";
-        document.getElementById("appContainer").style.display = "block";
-
-        document.getElementById("messageInput").disabled = false;
-        document.getElementById("sendMessageButton").disabled = false;
-
-        const buttons = document.querySelectorAll("#userList button");
-        buttons.forEach(btn => btn.disabled = false);
-        return;
-    }
-    else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
-
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
         choiceDisplayName.value = "";
