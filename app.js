@@ -114,16 +114,23 @@ socket.onmessage = function (event) {
                     line1.innerText = senderDisplay + " • " + timeStr + " • " + parsedData.status;
                     line1.style.display = "block";
 
-                    let line2 = document.createElement("span");
-                    line2.innerHTML = `@${senderName} <span style="font-size:1.25em; color:black;">${textContent}</span>`;
+                    let line2 = document.createElement("div");
                     line2.style.display = "block";
                     line2.style.color = "#666";
                     line2.style.fontSize = "0.95em";
-                    line2.style.backgroundColor = "#f0f0f0";
-                    line2.style.padding = "8px 12px";
-                    line2.style.borderRadius = "12px";
-                    line2.style.marginTop = "4px";
+                    line2.style.marginTop = "4px"; // Moved margin here
 
+                    let userPart = document.createElement("span");
+                    userPart.innerText = `@${username} `;
+
+                    let textPart = document.createElement("span");
+                    textPart.innerText = msg.message;
+                    textPart.style.fontSize = "1.25em";
+                    textPart.style.color = "black";
+                    textPart.style.backgroundColor = "#f0f0f0";
+                    textPart.style.padding = "4px 8px";
+                    textPart.style.borderRadius = "8px";
+                    textPart.style.display = "inline-block";
 
                     chatBubble.appendChild(line1);
                     chatBubble.appendChild(line2);
