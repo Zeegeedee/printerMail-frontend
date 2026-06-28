@@ -62,21 +62,32 @@ socket.onmessage = function (event) {
             else if (parsedData.action === "load_history_results") {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
-                    let oldBubble = document.createElement("div");
-                    let isMe = msg.sender === loggedInUser;
-                    let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
-                    let username = msg.sender;
-                    let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+                    
+                let oldBubble = document.createElement("div");
+                let isMe = msg.sender === loggedInUser;
+                let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
+                let username = msg.sender;
+                let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
-                    let line1 = document.createElement("span");
-                    line1.innerText = displayName + " • " + timeStr + " • " + msg.status;
-                    line1.style.display = "block";
+                let line1 = document.createElement("span");
+                line1.innerHTML = `${displayName} • <span style="font-size:0.95em; color:#666;">${timeStr} • ${msg.status}</span>`;
+                line1.style.display = "block";
 
-                    let line2 = document.createElement("span");
-                    line2.innerHTML = `@${username} <span style="font-size:1.25em; color:black;">${msg.message}</span>`;
-                    line2.style.display = "block";
-                    line2.style.color = "#666";
-                    line2.style.fontSize = "0.95em";
+                let line2 = document.createElement("span");
+                line2.style.display = "block";
+                line2.style.color = "#666";
+                line2.style.fontSize = "0.95em";
+
+                let userPart = document.createElement("span");
+                userPart.innerText = `@${username} `;
+
+                let textPart = document.createElement("span");
+                textPart.innerText = msg.message;
+                textPart.style.fontSize = "1.25em";
+                textPart.style.color = "black";
+
+                line2.append(userPart, textPart);
+
 
                     oldBubble.appendChild(line1);
                     oldBubble.appendChild(line2);
