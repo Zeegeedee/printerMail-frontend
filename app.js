@@ -53,6 +53,7 @@ socket.onmessage = function (event) {
             }
             else if (parsedData.action === "new_message") {
                 let senderName = parsedData.sender;
+                let senderDisplayName = parsedData.senderDisplayname 
                 let textContent = parsedData.message;
 
                 if (!localChatLogs[senderName]) {
@@ -62,7 +63,7 @@ socket.onmessage = function (event) {
 
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
-                    chatBubble.innerText = `${senderName}: ${textContent}`;
+                    chatBubble.innerText = `${senderDisplayName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
