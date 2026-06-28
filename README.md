@@ -1,2 +1,1 @@
-# printerMail:
-- There is no real README for now as i will shut this down first inorder to focus on the odin proejct to improve my website next time...
+# printerMail
