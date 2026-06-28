@@ -54,15 +54,16 @@ socket.onmessage = function (event) {
             else if (parsedData.action === "new_message") {
                 let senderName = parsedData.sender;
                 let textContent = parsedData.message;
+                let displayName = parsedData.display_name || senderName;
 
                 if (!localChatLogs[senderName]) {
                     localChatLogs[senderName] = [];
                 }
-                localChatLogs[senderName].push(`${senderName}: ${textContent}`);
+                localChatLogs[senderName].push(`${displayName}: ${textContent}`);
 
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
-                    chatBubble.innerText = `${senderName}: ${textContent}`;
+                    chatBubble.innerText = `${displayName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
@@ -77,7 +78,7 @@ socket.onmessage = function (event) {
     if (incomingText === "[+] SUCCESS: Logged in!") {
         console.log("🔓 Login verified by Python! Booting messenger features...");
 
-            loggedInUser = choiceName.value.toLowerCase().trim();
+        loggedInUser = choiceName.value.toLowerCase().trim();
 
         choiceName.value = "";
         choicePassword.value = "";
@@ -94,7 +95,6 @@ socket.onmessage = function (event) {
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
 
-        choiceName.value = "";
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
         choiceDisplayName.value = "";
