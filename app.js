@@ -2,46 +2,52 @@ let currentChatPartner = "";
 let loggedInUser = "";
 const localChatLogs = {};
 
-const HF_SPACE_HOST = "zeegeedee-printermail-backend.hf.space"; 
+const HF_SPACE_HOST = "zeegeedee-printermail-backend.hf.space";
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
+const socket = new WebSocket(`${protocol} ${HF_SPACE_HOST}/ws`);
 
-socket.onopen = function() {
+socket.onopen = function () {
     console.log("[+] Connected! Welcome to the Python server.");
 };
 
-socket.onmessage = function(event) {
+  
+socket.onerror = function (error) {
+    console.error("[-] WebSocket error:", error);
+    alert("Connection error. Please refresh the page and try again.");
+};
+
+socket.onclose = function () {
+    console.warn("[-] WebSocket connection closed.");
+    alert("You have been disconnected. Please refresh the page to reconnect.");
+};
+
+socket.onmessage = function (event) {
     let incomingText = event.data;
 
     if (incomingText.startsWith("{")) {
         try {
             let parsedData = JSON.parse(incomingText);
+
             if (parsedData.action === "search_results") {
                 renderDiscoveredUsers(parsedData.results);
                 return;
             }
             else if (parsedData.action === "incoming_friend_request") {
                 let friendRequestConfirmationWindow = window.confirm(parsedData.sender + " sent a friend request! Accept?");
-
                 if (friendRequestConfirmationWindow) {
                     socket.send(JSON.stringify({ "action": "accept_friend_request", "from_user": parsedData.sender }));
-                    return;
                 }
+                return;   
             }
             else if (parsedData.action === "load_history_results") {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
                     let oldBubble = document.createElement("div");
-                    let msgPrefix = "";
-                    if (msg.sender === loggedInUser) {
-                        msgPrefix = "You: "
-                    }
-                    else {
-                        msgPrefix = msg.sender + ": "
-                    }
+                    let msgPrefix = msg.sender === loggedInUser ? "You: " : msg.sender + ": ";
                     oldBubble.innerText = msgPrefix + msg.message;
                     document.getElementById("chatHistory").appendChild(oldBubble);
                 });
+                scrollToBottom();   
                 return;
             }
             else if (parsedData.action === "new_message") {
@@ -57,6 +63,7 @@ socket.onmessage = function(event) {
                     let chatBubble = document.createElement("div");
                     chatBubble.innerText = `${senderName}: ${textContent}`;
                     document.getElementById("chatHistory").appendChild(chatBubble);
+                    scrollToBottom();   
                 }
                 return;
             }
@@ -69,14 +76,15 @@ socket.onmessage = function(event) {
     if (incomingText === "[+] SUCCESS: Logged in!") {
         console.log("🔓 Login verified by Python! Booting messenger features...");
 
+          
         loggedInUser = choiceName.value.toLowerCase().trim();
 
         choiceName.value = "";
         choicePassword.value = "";
-        
+
         document.getElementById("authGate").style.display = "none";
         document.getElementById("appContainer").style.display = "block";
-        
+
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendMessageButton").disabled = false;
 
@@ -86,7 +94,7 @@ socket.onmessage = function(event) {
     }
     else if (incomingText === "[+] SUCCESS: Account created! Please log in.") {
         alert(incomingText);
-        
+
         choiceName.value = "";
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
@@ -109,6 +117,12 @@ socket.onmessage = function(event) {
     }
 };
 
+
+function scrollToBottom() {
+    const chatHistory = document.getElementById("chatHistory");
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
 const searchResultsContainer = document.getElementById("searchResultsContainer");
 
 function renderDiscoveredUsers(usersArray) {
@@ -118,31 +132,28 @@ function renderDiscoveredUsers(usersArray) {
         let sendFriendRequestButton = document.createElement("button");
         userButton.innerText = friend.display_name;
         sendFriendRequestButton.innerText = "Send Friend Request 👥➕";
-        
-        userButton.addEventListener('click', function() {
+
+        userButton.addEventListener('click', function () {
             if (searchSection && searchSection.style.display === "block") {
                 currentChatPartner = friend.username;
-                document.getElementById("chatHistory").innerHTML = "";
-                
+                document.getElementById("chatHistory").innerHTML = ""; 
+
                 if (messagingSection && searchSection) {
                     messagingSection.style.display = "block";
                     searchSection.style.display = "none";
                 }
-                
-                document.getElementById("chatHistory").innerHTML = "";
-                let chatHistoryDataRequest = {
+
+                socket.send(JSON.stringify({
                     action: "request_chat_history",
                     target: friend.username
-                }
-                let jsonStringedChatHistoryDataRequest = JSON.stringify(chatHistoryDataRequest)
-                socket.send(jsonStringedChatHistoryDataRequest)
+                }));
                 console.log(`Target recipient: ${currentChatPartner}`);
             }
         });
-        
-        sendFriendRequestButton.addEventListener('click', function(){
+
+        sendFriendRequestButton.addEventListener('click', function () {
             if (searchSection && searchSection.style.display === "block") {
-                socket.send(JSON.stringify({action: "send_friend_request", target: friend.username}));
+                socket.send(JSON.stringify({ action: "send_friend_request", target: friend.username }));
             }
         });
 
@@ -153,35 +164,31 @@ function renderDiscoveredUsers(usersArray) {
 
 function processInputs(event) {
     if (event) event.preventDefault();
-    let generatedUUID = crypto.randomUUID();
-    let numericTimestamp = Date.now();
     const messageBox = document.getElementById("messageInput");
-    
-    let messageValue = messageBox.value;
+    let messageValue = messageBox.value.trim();
+
+    if (currentChatPartner === "" || messageValue === "") return;
+
+
     let dataBundle = {
         action: "send_chat_message",
-        message_id: generatedUUID,
-        sender: loggedInUser,
         target: currentChatPartner,
         message: messageValue,
-        timestamp: numericTimestamp
+        timestamp: Date.now()
     };
-    let jsonOutput = JSON.stringify(dataBundle);
 
-    if (currentChatPartner !== "" && messageValue !== "") {
-        if (!localChatLogs[currentChatPartner]){
-            localChatLogs[currentChatPartner] = [];
-        }
-        localChatLogs[currentChatPartner].push(`You: ${messageValue}`);
-        
-        let chatBubble = document.createElement("div");
-        chatBubble.innerText = `You: ${messageValue}`;
-        document.getElementById("chatHistory").appendChild(chatBubble);
-        
-        socket.send(jsonOutput);
+    if (!localChatLogs[currentChatPartner]) {
+        localChatLogs[currentChatPartner] = [];
     }
+    localChatLogs[currentChatPartner].push(`You: ${messageValue}`);
+
+    let chatBubble = document.createElement("div");
+    chatBubble.innerText = `You: ${messageValue}`;
+    document.getElementById("chatHistory").appendChild(chatBubble);
+    scrollToBottom(); 
+
+    socket.send(JSON.stringify(dataBundle));
     messageBox.value = "";
-    console.log(jsonOutput);
 }
 
 const choiceDropdown = document.getElementById("authAction");
@@ -189,12 +196,20 @@ const choiceName = document.getElementById("authUsername");
 const choicePassword = document.getElementById("authPassword");
 const confirmPasswordLabel = document.getElementById("confirmPasswordLabel");
 const choiceConfirmPassword = document.getElementById("authConfirmPassword");
-const chooseDisplayNameLabel = document.getElementById("chooseDisplayNameLabel")
-const choiceDisplayName = document.getElementById("authDisplayName")
+const chooseDisplayNameLabel = document.getElementById("chooseDisplayNameLabel");
+const choiceDisplayName = document.getElementById("authDisplayName");
 const authErrorMessage = document.getElementById("authErrorMessage");
 
 const sendButton = document.getElementById("sendMessageButton");
 sendButton.addEventListener('click', processInputs);
+
+
+document.getElementById("messageInput").addEventListener('keydown', function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        processInputs(event);
+    }
+});
 
 const chatsModeButton = document.getElementById("chatsModeButton");
 const searchModeButton = document.getElementById("searchModeButton");
@@ -203,7 +218,7 @@ const messagingSection = document.getElementById("messagingSection");
 const searchSection = document.getElementById("searchSection");
 
 if (chatsModeButton) {
-    chatsModeButton.addEventListener('click', function() {
+    chatsModeButton.addEventListener('click', function () {
         messagingSection.style.display = "block";
         searchSection.style.display = "none";
         console.log("📱 Switched UI panel view to Messaging Mode.");
@@ -211,14 +226,14 @@ if (chatsModeButton) {
 }
 
 if (searchModeButton) {
-    searchModeButton.addEventListener('click', function() {
+    searchModeButton.addEventListener('click', function () {
         messagingSection.style.display = "none";
         searchSection.style.display = "block";
         console.log("🔍 Switched UI panel view to User Search Mode.");
     });
 }
 
-choiceDropdown.addEventListener('change', function() {
+choiceDropdown.addEventListener('change', function () {
     if (choiceDropdown.value === "login") {
         choiceConfirmPassword.style.display = "none";
         confirmPasswordLabel.style.display = "none";
@@ -238,7 +253,7 @@ function runAuthVerification(event) {
     if (event) event.preventDefault();
     let authAction = choiceDropdown.value;
     let authUsername = choiceName.value.toLowerCase().trim();
-    let authPassword =  choicePassword.value;
+    let authPassword = choicePassword.value;
     let authConfirmPassword = choiceConfirmPassword.value;
     let authDisplayName = choiceDisplayName.value;
 
@@ -248,34 +263,40 @@ function runAuthVerification(event) {
             authErrorMessage.innerText = "[-] Passwords do not match. Please check your typing.";
             return;
         }
-        const authPackage = {"action": authAction, "display": authDisplayName, "user": authUsername, "pass": authPassword};
-        const jsonStringedAuthPackage = JSON.stringify(authPackage);
+        const authPackage = { "action": authAction, "display": authDisplayName, "user": authUsername, "pass": authPassword };
         authErrorMessage.style.display = "none";
-        socket.send(jsonStringedAuthPackage);
+        socket.send(JSON.stringify(authPackage));
     }
     else if (authAction === "login") {
-        const loginPackage = {"action": authAction, "user": authUsername, "pass": authPassword};
-        const jsonStringedLoginPackage = JSON.stringify(loginPackage);
-        socket.send(jsonStringedLoginPackage);
+        const loginPackage = { "action": authAction, "user": authUsername, "pass": authPassword };
+        socket.send(JSON.stringify(loginPackage));
     }
 }
+
+
+[choiceName, choicePassword, choiceConfirmPassword, choiceDisplayName].forEach(input => {
+    if (input) {
+        input.addEventListener('keydown', function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                runAuthVerification(event);
+            }
+        });
+    }
+});
 
 const submitAuthCredentials = document.getElementById("authSubmitButton");
 submitAuthCredentials.addEventListener('click', runAuthVerification);
 
 const userSearchInput = document.getElementById("userSearchInput");
 if (userSearchInput) {
-    userSearchInput.addEventListener('input', function() {
+    userSearchInput.addEventListener('input', function () {
         let typedText = userSearchInput.value.trim();
         if (typedText.length === 0) {
             searchResultsContainer.innerHTML = "";
             return;
         }
-        let searchPayload = {
-            "action": "search",
-            "query": typedText
-        };
-        socket.send(JSON.stringify(searchPayload));
+        socket.send(JSON.stringify({ "action": "search", "query": typedText }));
         console.log(`📡 Broadcasted search query to server: ${typedText}`);
     });
 }
