@@ -62,35 +62,36 @@ socket.onmessage = function (event) {
             else if (parsedData.action === "load_history_results") {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
-                    
-                let oldBubble = document.createElement("div");
-                let isMe = msg.sender === loggedInUser;
-                let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
-                let username = msg.sender;
-                let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+                    let oldBubble = document.createElement("div");
+                    oldBubble.className = "msg-bubble";
 
-                let line1 = document.createElement("span");
-                line1.innerHTML = `${displayName} • <span style="font-size:0.95em; color:#666;">${timeStr} • ${msg.status}</span>`;
-                line1.style.display = "block";
+                    let isMe = msg.sender === loggedInUser;
+                    let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
+                    let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
-                let line2 = document.createElement("span");
-                line2.style.display = "block";
-                line2.style.color = "#666";
-                line2.style.fontSize = "0.95em";
+                    let line1 = document.createElement("span");
+                    line1.className = "msg-meta";
+                    line1.innerHTML = `${displayName} • <span class="msg-meta-detail">${timeStr} • ${msg.status}</span>`;
 
-                let userPart = document.createElement("span");
-                userPart.innerText = `@${username} `;
+                    let line2 = document.createElement("span");
+                    line2.className = "msg-sender";
 
-                let textPart = document.createElement("span");
-                textPart.innerText = msg.message;
-                textPart.style.fontSize = "1.25em";
-                textPart.style.color = "black";
+                    let userPart = document.createElement("span");
+                    userPart.className = "msg-username";
+                    userPart.innerText = `@${msg.sender} `;
 
-                line2.append(userPart, textPart);
+                    let messageBox = document.createElement("div");
+                    messageBox.className = "msg-box";
 
+                    let textPart = document.createElement("span");
+                    textPart.className = "msg-text";
+                    textPart.innerText = msg.message;
 
+                    messageBox.appendChild(textPart);
+                    line2.appendChild(userPart);
                     oldBubble.appendChild(line1);
                     oldBubble.appendChild(line2);
+                    oldBubble.appendChild(messageBox);
                     document.getElementById("chatHistory").appendChild(oldBubble);
                 });
                 scrollToBottom();
@@ -107,33 +108,34 @@ socket.onmessage = function (event) {
 
                 if (currentChatPartner === senderName) {
                     let chatBubble = document.createElement("div");
+                    chatBubble.className = "msg-bubble";
+
                     let senderDisplay = parsedData.senderDisplayname || senderName;
                     let timeStr = new Date(parsedData.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
                     let line1 = document.createElement("span");
+                    line1.className = "msg-meta";
                     line1.innerText = senderDisplay + " • " + timeStr + " • " + parsedData.status;
-                    line1.style.display = "block";
 
-                    let line2 = document.createElement("div");
-                    line2.style.display = "block";
-                    line2.style.color = "#666";
-                    line2.style.fontSize = "0.95em";
-                    line2.style.marginTop = "4px"; // Moved margin here
+                    let line2 = document.createElement("span");
+                    line2.className = "msg-sender";
 
                     let userPart = document.createElement("span");
-                    userPart.innerText = `@${username} `;
+                    userPart.className = "msg-username";
+                    userPart.innerText = `@${senderName} `;
+
+                    let messageBox = document.createElement("div");
+                    messageBox.className = "msg-box";
 
                     let textPart = document.createElement("span");
-                    textPart.innerText = msg.message;
-                    textPart.style.fontSize = "1.25em";
-                    textPart.style.color = "black";
-                    textPart.style.backgroundColor = "#f0f0f0";
-                    textPart.style.padding = "4px 8px";
-                    textPart.style.borderRadius = "8px";
-                    textPart.style.display = "inline-block";
+                    textPart.className = "msg-text";
+                    textPart.innerText = textContent;
 
+                    messageBox.appendChild(textPart);
+                    line2.appendChild(userPart);
                     chatBubble.appendChild(line1);
                     chatBubble.appendChild(line2);
+                    chatBubble.appendChild(messageBox);
                     document.getElementById("chatHistory").appendChild(chatBubble);
                     scrollToBottom();
                 }
@@ -181,8 +183,15 @@ function renderDiscoveredUsers(usersArray) {
     searchResultsContainer.innerHTML = "";
     usersArray.forEach(friend => {
         let userButton = document.createElement("button");
-        let sendFriendRequestButton = document.createElement("button");
+        userButton.className = "search-user-btn";
         userButton.innerText = friend.display_name;
+
+        let userUsernameDisplay = document.createElement("p");
+        userUsernameDisplay.className = "search-user-username";
+        userUsernameDisplay.innerText = "@" + friend.username;
+
+        let sendFriendRequestButton = document.createElement("button");
+        sendFriendRequestButton.className = "friend-request-btn";
         sendFriendRequestButton.innerText = "Send Friend Request 👥➕";
 
         userButton.addEventListener('click', function () {
@@ -210,6 +219,7 @@ function renderDiscoveredUsers(usersArray) {
         });
 
         searchResultsContainer.appendChild(userButton);
+        searchResultsContainer.appendChild(userUsernameDisplay);
         searchResultsContainer.appendChild(sendFriendRequestButton);
     });
 }
@@ -234,20 +244,33 @@ function processInputs(event) {
     localChatLogs[currentChatPartner].push(`You: ${messageValue}`);
 
     let chatBubble = document.createElement("div");
+    chatBubble.className = "msg-bubble";
+
     let timeStr = new Date(Date.now()).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
 
     let line1 = document.createElement("span");
+    line1.className = "msg-meta";
     line1.innerText = "You • " + timeStr + " • sending...";
-    line1.style.display = "block";
 
     let line2 = document.createElement("span");
-    line2.innerHTML = `@${loggedInUser} <span style="font-size:1.25em; color:black;">${messageValue}</span>`;
-    line2.style.display = "block";
-    line2.style.color = "#666";
-    line2.style.fontSize = "0.95em";
+    line2.className = "msg-sender";
 
+    let userPart = document.createElement("span");
+    userPart.className = "msg-username";
+    userPart.innerText = "@" + loggedInUser + " ";
+
+    let msgBox = document.createElement("div");
+    msgBox.className = "msg-box";
+
+    let textPart = document.createElement("span");
+    textPart.className = "msg-text";
+    textPart.innerText = messageValue;
+
+    msgBox.appendChild(textPart);
+    line2.appendChild(userPart);
     chatBubble.appendChild(line1);
     chatBubble.appendChild(line2);
+    chatBubble.appendChild(msgBox);
     document.getElementById("chatHistory").appendChild(chatBubble);
     scrollToBottom();
 
