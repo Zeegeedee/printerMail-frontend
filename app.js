@@ -63,11 +63,12 @@ socket.onmessage = function (event) {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
                     let oldBubble = document.createElement("div");
-                    oldBubble.className = "msg-bubble";
 
                     let isMe = msg.sender === loggedInUser;
                     let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
                     let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+
+                    oldBubble.className = isMe ? "msg-bubble msg-bubble-mine" : "msg-bubble msg-bubble-theirs";
 
                     let line1 = document.createElement("span");
                     line1.className = "msg-meta";
@@ -219,8 +220,8 @@ function renderDiscoveredUsers(usersArray) {
         });
 
         searchResultsContainer.appendChild(userButton);
-        searchResultsContainer.appendChild(userUsernameDisplay);
         searchResultsContainer.appendChild(sendFriendRequestButton);
+        searchResultsContainer.appendChild(userUsernameDisplay);
     });
 }
 
@@ -390,6 +391,11 @@ if (messagingSection && searchSection) {
     messagingSection.style.display = "block";
     searchSection.style.display = "none";
 }
+
+document.getElementById("messageInput").addEventListener("input", function() {
+    this.style.height = "auto";
+    this.style.height = this.scrollHeight + "px";
+});
 
 document.getElementById("appContainer").style.display = "none";
 document.getElementById("messageInput").disabled = true;
