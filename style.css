@@ -4,7 +4,11 @@
 
 .msg-bubble-mine {
     margin-bottom: 8px;
-    color: #e7f4fd;
+}
+
+.msg-bubble-mine .msg-box {
+    background-color: #e7f4fd;
+    border-color: #bce0fd;
 }
 
 .msg-bubble-theirs {
