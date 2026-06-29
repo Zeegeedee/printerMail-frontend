@@ -384,10 +384,6 @@ const userSearchInput = document.getElementById("userSearchInput");
 if (userSearchInput) {
     userSearchInput.addEventListener('input', function () {
         let typedText = userSearchInput.value.trim();
-        if (typedText.length === 0) {
-            searchResultsContainer.innerHTML = "";
-            return;
-        }
         socket.send(JSON.stringify({ "action": "search", "query": typedText }));
         console.log(`📡 Broadcasted search query to server: ${typedText}`);
     });
