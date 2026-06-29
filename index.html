@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>printerMail</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=10.0">
+
+    <title>printerMail</title>
 </head>
 <body>
     <div id="authGate">
@@ -15,7 +17,7 @@
         </div>
         <div>
             <label id="chooseDisplayNameLabel">Display Name:</label>
-            <input id="authDisplayName" type="text" maxlength="20" placeholder="Max 20 characters...">
+            <input id="authDisplayName" type="text" maxlength="30" placeholder="Max 30 characters...">
         </div>
         <div>
             <label>Username:</label>
@@ -29,7 +31,7 @@
             <label id="confirmPasswordLabel">Confirm Password:</label>
             <input id="authConfirmPassword" type="password">
         </div>
-        <p id="authErrorMessage" style="color: red; font-size: 14px; margin: 10px 0; font-weight: bold;">hi</p>
+        <p id="authErrorMessage">hi</p>
         <button id="authSubmitButton">Confirm</button>
 
     </div>
@@ -63,6 +65,8 @@
             <div id="searchResultsContainer"></div>
         </div>
     </div>
+
+    <link rel="stylesheet" href="style.css">
     <script src="app.js"></script>
 </body>
 </html>
