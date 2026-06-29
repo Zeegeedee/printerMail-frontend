@@ -165,8 +165,14 @@ socket.onmessage = function (event) {
     }
     else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
         alert(incomingText);
-        authErrorMessage.style.display = "block";
-        authErrorMessage.innerText = incomingText;
+        if (incomingText.includes("session token")) {
+            sessionStorage.clear();
+            document.getElementById("authGate").style.display = "block";
+            document.getElementById("appContainer").style.display = "none";
+        } else {
+            authErrorMessage.style.display = "block";
+            authErrorMessage.innerText = incomingText;
+        }
         choicePassword.value = "";
         choiceConfirmPassword.value = "";
         return;
