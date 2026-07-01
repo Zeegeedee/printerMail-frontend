@@ -1,4 +1,7 @@
 let currentChatPartner = "";
+let pendingRequests = [];
+let friends = [];
+let lastSearchResults = [];
 let loggedInUser = "";
 const localChatLogs = {};
 
@@ -9,8 +12,11 @@ const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
 socket.onopen = function () {
     console.log("[+] Connected! Welcome to the Python server.");
     const savedToken = sessionStorage.getItem("sessionToken");
+    const savedRememberToken = localStorage.getItem("rememberToken");
     if (savedToken) {
         socket.send(JSON.stringify({ action: "token_login", token: savedToken }));
+    } else if (savedRememberToken) {
+        socket.send(JSON.stringify({ action: "token_login", remember_token: savedRememberToken }));
     }
 };
 
@@ -23,7 +29,9 @@ socket.onclose = function (event) {
     console.warn("[-] WebSocket connection closed. Code:", event.code);
     if (event.code !== 1000 && event.code !== 1001) {
         sessionStorage.clear();
-        alert("You have been disconnected unexpectedly. Please refresh the page to reconnect.");
+        localStorage.removeItem("rememberToken");
+        localStorage.removeItem("sessionUser");
+        alert("[-] ERROR: You have been disconnected unexpectedly. Please refresh the page to reconnect.");
     }
 };
 
@@ -36,10 +44,25 @@ socket.onmessage = function (event) {
 
             if (parsedData.action === "login_success") {
                 loggedInUser = parsedData.user;
-                sessionStorage.setItem("sessionToken", parsedData.token);
-                sessionStorage.setItem("sessionUser", parsedData.user);
+                const rememberMeCheckbox = document.getElementById("authRememberMe");
+                let rememberMe = rememberMeCheckbox.checked;
+                pendingRequests = parsedData.pending_friend_requests;
+                friends = parsedData.friends;
+
+                if (rememberMe) {
+                    localStorage.setItem("rememberToken", parsedData.remember_token);
+                    localStorage.setItem("sessionUser", parsedData.user);
+                } else {
+                    sessionStorage.setItem("sessionToken", parsedData.token);
+                    sessionStorage.setItem("sessionUser", parsedData.user);
+                }
+
                 choiceName.value = "";
                 choicePassword.value = "";
+                rememberMeCheckbox.checked = false;
+
+                rememberMeCheckbox.style.display = "none";
+                rememberMeLabel.style.display = "none";
                 document.getElementById("authGate").style.display = "none";
                 document.getElementById("appContainer").style.display = "block";
                 document.getElementById("messageInput").disabled = false;
@@ -47,26 +70,29 @@ socket.onmessage = function (event) {
                 const buttons = document.querySelectorAll("#userList button");
                 buttons.forEach(btn => btn.disabled = false);
                 return;
-            }
-            else if (parsedData.action === "search_results") {
+            } else if (parsedData.action === "search_results") {
+                lastSearchResults = parsedData.results;
                 renderDiscoveredUsers(parsedData.results);
                 return;
-            }
-            else if (parsedData.action === "incoming_friend_request") {
+            } else if (parsedData.action === "incoming_friend_request") {
+                pendingRequests.push({
+                    username: parsedData.sender,
+                    display_name: parsedData.display_name
+                });
+                renderDiscoveredUsers(lastSearchResults);
                 let friendRequestConfirmationWindow = window.confirm(parsedData.sender + " sent a friend request! Accept?");
                 if (friendRequestConfirmationWindow) {
                     socket.send(JSON.stringify({ "action": "accept_friend_request", "from_user": parsedData.sender }));
                 }
                 return;
-            }
-            else if (parsedData.action === "load_history_results") {
+            } else if (parsedData.action === "load_history_results") {
                 document.getElementById("chatHistory").innerHTML = "";
                 parsedData.results.forEach(msg => {
                     let oldBubble = document.createElement("div");
 
                     let isMe = msg.sender === loggedInUser;
                     let displayName = isMe ? "You" : (msg.senderDisplayname || msg.sender);
-                    let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+                    let timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila" }) + " PHT";
 
                     oldBubble.className = isMe ? "msg-bubble msg-bubble-mine" : "msg-bubble msg-bubble-theirs";
 
@@ -97,8 +123,7 @@ socket.onmessage = function (event) {
                 });
                 scrollToBottom();
                 return;
-            }
-            else if (parsedData.action === "new_message") {
+            } else if (parsedData.action === "new_message") {
                 let senderName = parsedData.sender;
                 let textContent = parsedData.message;
 
@@ -112,7 +137,7 @@ socket.onmessage = function (event) {
                     chatBubble.className = "msg-bubble";
 
                     let senderDisplay = parsedData.senderDisplayname || senderName;
-                    let timeStr = new Date(parsedData.timestamp * 1000).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+                    let timeStr = new Date(parsedData.timestamp * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila" }) + " PHT";
 
                     let line1 = document.createElement("span");
                     line1.className = "msg-meta";
@@ -162,11 +187,12 @@ socket.onmessage = function (event) {
         document.getElementById("authDisplayName").style.display = "none";
         document.getElementById("chooseDisplayNameLabel").style.display = "none";
         return;
-    }
-    else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
+    } else if (incomingText.startsWith("[-] ERROR:") || incomingText.startsWith("[-] FAIL:")) {
         alert(incomingText);
         if (incomingText.includes("session token")) {
             sessionStorage.clear();
+            localStorage.removeItem("rememberToken");
+            localStorage.removeItem("sessionUser");
             document.getElementById("authGate").style.display = "block";
             document.getElementById("appContainer").style.display = "none";
         } else {
@@ -201,6 +227,16 @@ function renderDiscoveredUsers(usersArray) {
         sendFriendRequestButton.className = "friend-request-btn";
         sendFriendRequestButton.innerText = "Send Friend Request 👥➕";
 
+        if (pendingRequests.some(r => r.username === friend.username)) {
+            sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
+            sendFriendRequestButton.disabled = true;
+        }
+
+        if (friends.includes(friend.username)) {
+            sendFriendRequestButton.innerText = "Friends! 👥";
+            sendFriendRequestButton.disabled = true;
+        }
+
         userButton.addEventListener('click', function () {
             if (searchSection && searchSection.style.display === "block") {
                 currentChatPartner = friend.username;
@@ -226,8 +262,8 @@ function renderDiscoveredUsers(usersArray) {
         });
 
         searchResultsContainer.appendChild(userButton);
-        searchResultsContainer.appendChild(sendFriendRequestButton);
         searchResultsContainer.appendChild(userUsernameDisplay);
+        searchResultsContainer.appendChild(sendFriendRequestButton);
     });
 }
 
@@ -253,7 +289,7 @@ function processInputs(event) {
     let chatBubble = document.createElement("div");
     chatBubble.className = "msg-bubble";
 
-    let timeStr = new Date(Date.now()).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila"}) + " PHT";
+    let timeStr = new Date(Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila" }) + " PHT";
 
     let line1 = document.createElement("span");
     line1.className = "msg-meta";
@@ -293,6 +329,8 @@ const choiceConfirmPassword = document.getElementById("authConfirmPassword");
 const chooseDisplayNameLabel = document.getElementById("chooseDisplayNameLabel");
 const choiceDisplayName = document.getElementById("authDisplayName");
 const authErrorMessage = document.getElementById("authErrorMessage");
+const authRememberMe = document.getElementById("authRememberMe");
+const rememberMeLabel = document.getElementById("rememberMeLabel");
 
 const sendButton = document.getElementById("sendMessageButton");
 sendButton.addEventListener('click', processInputs);
@@ -309,11 +347,13 @@ const searchModeButton = document.getElementById("searchModeButton");
 
 const messagingSection = document.getElementById("messagingSection");
 const searchSection = document.getElementById("searchSection");
+const friendRequestsSection = document.getElementById("friendRequestsSection");
 
 if (chatsModeButton) {
     chatsModeButton.addEventListener('click', function () {
         messagingSection.style.display = "block";
         searchSection.style.display = "none";
+        friendRequestsSection.style.display = "none";
         console.log("📱 Switched UI panel view to Messaging Mode.");
     });
 }
@@ -322,6 +362,7 @@ if (searchModeButton) {
     searchModeButton.addEventListener('click', function () {
         messagingSection.style.display = "none";
         searchSection.style.display = "block";
+        friendRequestsSection.style.display = "none";
         console.log("🔍 Switched UI panel view to User Search Mode.");
     });
 }
@@ -332,13 +373,18 @@ choiceDropdown.addEventListener('change', function () {
         confirmPasswordLabel.style.display = "none";
         choiceDisplayName.style.display = "none";
         chooseDisplayNameLabel.style.display = "none";
+        authRememberMe.style.display = "block";
+        rememberMeLabel.style.display = "";
         authErrorMessage.innerText = "";
+
     } else {
         choiceConfirmPassword.style.display = "block";
         confirmPasswordLabel.style.display = "";
         choiceDisplayName.style.display = "block";
         chooseDisplayNameLabel.style.display = "";
         authErrorMessage.innerText = "";
+        authRememberMe.style.display = "none";
+        rememberMeLabel.style.display = "none";
     }
 });
 
@@ -359,9 +405,8 @@ function runAuthVerification(event) {
         const authPackage = { "action": authAction, "display": authDisplayName, "user": authUsername, "pass": authPassword };
         authErrorMessage.style.display = "none";
         socket.send(JSON.stringify(authPackage));
-    }
-    else if (authAction === "login") {
-        const loginPackage = { "action": authAction, "user": authUsername, "pass": authPassword };
+    } else if (authAction === "login") {
+        const loginPackage = { "action": authAction, "user": authUsername, "pass": authPassword, "remember_me": authRememberMe.checked };
         socket.send(JSON.stringify(loginPackage));
     }
 }
@@ -380,10 +425,93 @@ function runAuthVerification(event) {
 const submitAuthCredentials = document.getElementById("authSubmitButton");
 submitAuthCredentials.addEventListener('click', runAuthVerification);
 
+function triggerLogout() {
+    const logoutPackage = { "action": "logout" };
+
+    // Remember to change this when I add more stuff to the session/localStorage.
+    socket.send(JSON.stringify(logoutPackage));
+    sessionStorage.clear();
+    localStorage.clear();
+
+    console.log(`${loggedInUser} Logged out🔒. Goodbye!👋`);
+    window.location.reload();
+}
+
+function renderFriendRequests() {
+    friendRequestsSection.innerHTML = "<h3>Friend Requests:</h3>";
+    if (!pendingRequests || pendingRequests.length === 0) {
+        let noRequestsText = document.createElement("p");
+        noRequestsText.innerText = "No Pending Friend Requests. You're all caught up!";
+        friendRequestsSection.appendChild(noRequestsText);
+        friendRequestsSection.style.display = "block";
+        messagingSection.style.display = "none";
+        searchSection.style.display = "none";
+        return;
+    }
+
+    pendingRequests.forEach(pendingFriendRequest => {
+        let displayNameBtn = document.createElement("button");
+        displayNameBtn.className = "search-user-btn";
+        displayNameBtn.innerText = pendingFriendRequest.display_name;
+
+        let usernameDisplay = document.createElement("p");
+        usernameDisplay.className = "search-user-username";
+        usernameDisplay.innerText = "@" + pendingFriendRequest.username;
+
+        let acceptBtn = document.createElement("button");
+        acceptBtn.className = "accept-friend-request-btn";
+        acceptBtn.innerText = "Accept Friend Request ✅";
+
+        let declineBtn = document.createElement("button");
+        declineBtn.className = "decline-friend-request-btn";
+        declineBtn.innerText = "Decline Friend Request ❌";
+
+        displayNameBtn.addEventListener('click', function () {
+            currentChatPartner = pendingFriendRequest.username;
+            document.getElementById("chatHistory").innerHTML = "";
+
+            messagingSection.style.display = "block";
+            searchSection.style.display = "none";
+            friendRequestsSection.style.display = "none";
+
+            socket.send(JSON.stringify({
+                action: "request_chat_history",
+                target: pendingFriendRequest.username
+            }));
+            console.log(`Target recipient: ${currentChatPartner}`);
+        });
+
+        acceptBtn.addEventListener('click', function () {
+            socket.send(JSON.stringify({ action: "accept_friend_request", from_user: pendingFriendRequest.username }));
+            pendingRequests = pendingRequests.filter(r => r.username !== pendingFriendRequest.username);
+            renderFriendRequests();
+        });
+
+        declineBtn.addEventListener('click', function () {
+            socket.send(JSON.stringify({ action: "decline_friend_request", from_user: pendingFriendRequest.username }));
+            pendingRequests = pendingRequests.filter(r => r.username !== pendingFriendRequest.username);
+            renderFriendRequests();
+        });
+
+        friendRequestsSection.appendChild(displayNameBtn);
+        friendRequestsSection.appendChild(usernameDisplay);
+        friendRequestsSection.appendChild(acceptBtn);
+        friendRequestsSection.appendChild(declineBtn);
+    });
+
+    friendRequestsSection.style.display = "block";
+    messagingSection.style.display = "none";
+    searchSection.style.display = "none";
+}
+
 const userSearchInput = document.getElementById("userSearchInput");
 if (userSearchInput) {
     userSearchInput.addEventListener('input', function () {
         let typedText = userSearchInput.value.trim();
+        if (typedText.length === 0) {
+            searchResultsContainer.innerHTML = "";
+            return;
+        }
         socket.send(JSON.stringify({ "action": "search", "query": typedText }));
         console.log(`📡 Broadcasted search query to server: ${typedText}`);
     });
@@ -394,7 +522,7 @@ if (messagingSection && searchSection) {
     searchSection.style.display = "none";
 }
 
-document.getElementById("messageInput").addEventListener("input", function() {
+document.getElementById("messageInput").addEventListener("input", function () {
     this.style.height = "auto";
     this.style.height = this.scrollHeight + "px";
 });
@@ -402,9 +530,8 @@ document.getElementById("messageInput").addEventListener("input", function() {
 document.getElementById("appContainer").style.display = "none";
 document.getElementById("messageInput").disabled = true;
 document.getElementById("sendMessageButton").disabled = true;
+document.getElementById("chooseDisplayNameLabel").style.display = "none";
+document.getElementById("authDisplayName").style.display = "none";
 document.getElementById("confirmPasswordLabel").style.display = "none";
 document.getElementById("authConfirmPassword").style.display = "none";
-document.getElementById("authDisplayName").style.display = "none";
-document.getElementById("chooseDisplayNameLabel").style.display = "none";
-authErrorMessage.style.display = "none";
 searchSection.style.display = "none";
