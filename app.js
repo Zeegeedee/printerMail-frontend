@@ -534,4 +534,5 @@ document.getElementById("chooseDisplayNameLabel").style.display = "none";
 document.getElementById("authDisplayName").style.display = "none";
 document.getElementById("confirmPasswordLabel").style.display = "none";
 document.getElementById("authConfirmPassword").style.display = "none";
+document.getElementById("authErrorMessage").style.display = "none";
 searchSection.style.display = "none";
