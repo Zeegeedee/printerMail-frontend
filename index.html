@@ -31,6 +31,9 @@
             <label id="confirmPasswordLabel">Confirm Password:</label>
             <input id="authConfirmPassword" type="password">
         </div>
+        <input type="checkbox" id="authRememberMe">
+        <label for="authRememberMe" id="rememberMeLabel">Remember Me</label>
+
         <p id="authErrorMessage">hi</p>
         <button id="authSubmitButton">Confirm</button>
 
@@ -40,6 +43,8 @@
         <div id="modeTabs">
             <button id="chatsModeButton">Chats</button>
             <button id="searchModeButton">Search Users</button>
+            <button id="friendRequestsButton" onclick="renderFriendRequests()">Friend Requests</button>
+            <button id="logoutButton" onclick="triggerLogout()">Log Out</button>
         </div>
 
         <div id="messagingSection">
@@ -63,6 +68,12 @@
             <input id="userSearchInput" placeholder="Type a username...">
             <!-- Javascript will add the users here automatically based on the search query received -->
             <div id="searchResultsContainer"></div>
+        </div>
+
+        <div id="friendRequestsSection">
+            <h3>Friend Requests:</h3>
+            <!-- Javascript will automatically add the people in your pending friend requests list -->
+             <div id="friendRequestsContainer"></div>
         </div>
     </div>
 
