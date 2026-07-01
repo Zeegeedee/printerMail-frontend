@@ -5,7 +5,7 @@ let lastSearchResults = [];
 let loggedInUser = "";
 const localChatLogs = {};
 
-const HF_SPACE_HOST = "zeegeedee-printermail-backend.hf.space";
+const HF_SPACE_HOST = "zeegeedee-zynctalk-backend.hf.space";
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const socket = new WebSocket(`${protocol}//${HF_SPACE_HOST}/ws`);
 
