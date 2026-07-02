@@ -50,6 +50,11 @@ socket.onmessage = function (event) {
                 pendingRequests = parsedData.pending_friend_requests;
                 friends = parsedData.friends;
 
+                const displayNameDisplay = document.getElementById("displayNameDisplay").innerText = `${parsedData.display_name} | `;
+                displayNameDisplay.className = "display-name-display";
+                const usernameDisplay = document.getElementById("usernameDisplay").innerText = `@${parsedData.user}`
+                usernameDisplay.className = "username-display";
+
                 const isRememberedSession = !!localStorage.getItem("rememberToken");
 
                 if (rememberMeCheckbox.checked || isRememberedSession) {
@@ -424,8 +429,6 @@ choiceDropdown.addEventListener('change', function () {
         confirmPasswordLabel.style.display = "none";
         choiceDisplayName.style.display = "none";
         chooseDisplayNameLabel.style.display = "none";
-        authRememberMe.style.display = "block";
-        rememberMeLabel.style.display = "";
         authErrorMessage.innerText = "";
 
     } else {
@@ -588,4 +591,6 @@ document.getElementById("authDisplayName").style.display = "none";
 document.getElementById("confirmPasswordLabel").style.display = "none";
 document.getElementById("authConfirmPassword").style.display = "none";
 document.getElementById("authErrorMessage").style.display = "none";
+document.getElementById("authRememberMe").style.display = "none";
+document.getElementById("rememberMeLabel").style.display = "none";
 searchSection.style.display = "none";
