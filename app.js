@@ -45,21 +45,25 @@ socket.onmessage = function (event) {
             if (parsedData.action === "login_success") {
                 loggedInUser = parsedData.user;
                 const rememberMeCheckbox = document.getElementById("authRememberMe");
-                let rememberMe = rememberMeCheckbox.checked;
                 pendingRequests = parsedData.pending_friend_requests;
                 friends = parsedData.friends;
 
-                if (rememberMe) {
-                    localStorage.setItem("rememberToken", parsedData.remember_token);
+                const isRememberedSession = !!localStorage.getItem("rememberToken");
+
+                if (rememberMeCheckbox.checked || isRememberedSession) {
+                    if (parsedData.remember_token) {
+                        localStorage.setItem("rememberToken", parsedData.remember_token);
+                    }
                     localStorage.setItem("sessionUser", parsedData.user);
+                    sessionStorage.removeItem("sessionToken");
                 } else {
                     sessionStorage.setItem("sessionToken", parsedData.token);
                     sessionStorage.setItem("sessionUser", parsedData.user);
                 }
 
+                rememberMeCheckbox.checked = false;
                 choiceName.value = "";
                 choicePassword.value = "";
-                rememberMeCheckbox.checked = false;
 
                 rememberMeCheckbox.style.display = "none";
                 rememberMeLabel.style.display = "none";
@@ -79,10 +83,27 @@ socket.onmessage = function (event) {
                     username: parsedData.sender,
                     display_name: parsedData.display_name
                 });
-                renderDiscoveredUsers(lastSearchResults);
-                let friendRequestConfirmationWindow = window.confirm(parsedData.sender + " sent a friend request! Accept?");
+                if (lastSearchResults.length > 0) {
+                    renderDiscoveredUsers(lastSearchResults);
+                }
+                let friendRequestConfirmationWindow = window.confirm(parsedData.display_name + " (@" + parsedData.sender + ") sent a friend request! Accept?");
                 if (friendRequestConfirmationWindow) {
                     socket.send(JSON.stringify({ "action": "accept_friend_request", "from_user": parsedData.sender }));
+                    pendingRequests = pendingRequests.filter(r => r.username !== parsedData.sender);
+                    if (!friends.includes(parsedData.sender)) {
+                        friends.push(parsedData.sender);
+                    }
+                    if (lastSearchResults.length > 0) {
+                        renderDiscoveredUsers(lastSearchResults);
+                    }
+                }
+                return;
+            } else if (parsedData.action === "friend_request_accepted") {
+                if (!friends.includes(parsedData.by)) {
+                    friends.push(parsedData.by);
+                }
+                if (lastSearchResults.length > 0) {
+                    renderDiscoveredUsers(lastSearchResults);
                 }
                 return;
             } else if (parsedData.action === "load_history_results") {
@@ -211,6 +232,7 @@ function scrollToBottom() {
 }
 
 const searchResultsContainer = document.getElementById("searchResultsContainer");
+const friendRequestsContainer = document.getElementById("friendRequestsContainer");
 
 function renderDiscoveredUsers(usersArray) {
     searchResultsContainer.innerHTML = "";
@@ -225,40 +247,33 @@ function renderDiscoveredUsers(usersArray) {
 
         let sendFriendRequestButton = document.createElement("button");
         sendFriendRequestButton.className = "friend-request-btn";
-        sendFriendRequestButton.innerText = "Send Friend Request 👥➕";
-
-        if (pendingRequests.some(r => r.username === friend.username)) {
-            sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
-            sendFriendRequestButton.disabled = true;
-        }
 
         if (friends.includes(friend.username)) {
             sendFriendRequestButton.innerText = "Friends! 👥";
             sendFriendRequestButton.disabled = true;
+        } else if (pendingRequests.some(r => r.username === friend.username)) {
+            sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
+            sendFriendRequestButton.disabled = true;
+        } else {
+            sendFriendRequestButton.innerText = "Send Friend Request 👥➕";
+            sendFriendRequestButton.addEventListener('click', function () {
+                socket.send(JSON.stringify({ action: "send_friend_request", target: friend.username }));
+                sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
+                sendFriendRequestButton.disabled = true;
+            });
         }
 
         userButton.addEventListener('click', function () {
-            if (searchSection && searchSection.style.display === "block") {
-                currentChatPartner = friend.username;
-                document.getElementById("chatHistory").innerHTML = "";
-
-                if (messagingSection && searchSection) {
-                    messagingSection.style.display = "block";
-                    searchSection.style.display = "none";
-                }
-
-                socket.send(JSON.stringify({
-                    action: "request_chat_history",
-                    target: friend.username
-                }));
-                console.log(`Target recipient: ${currentChatPartner}`);
-            }
-        });
-
-        sendFriendRequestButton.addEventListener('click', function () {
-            if (searchSection && searchSection.style.display === "block") {
-                socket.send(JSON.stringify({ action: "send_friend_request", target: friend.username }));
-            }
+            currentChatPartner = friend.username;
+            document.getElementById("chatHistory").innerHTML = "";
+            messagingSection.style.display = "block";
+            searchSection.style.display = "none";
+            friendRequestsSection.style.display = "none";
+            socket.send(JSON.stringify({
+                action: "request_chat_history",
+                target: friend.username
+            }));
+            console.log(`Target recipient: ${currentChatPartner}`);
         });
 
         searchResultsContainer.appendChild(userButton);
@@ -344,6 +359,7 @@ document.getElementById("messageInput").addEventListener('keydown', function (ev
 
 const chatsModeButton = document.getElementById("chatsModeButton");
 const searchModeButton = document.getElementById("searchModeButton");
+const friendRequestsButton = document.getElementById("friendRequestsButton");
 
 const messagingSection = document.getElementById("messagingSection");
 const searchSection = document.getElementById("searchSection");
@@ -364,6 +380,12 @@ if (searchModeButton) {
         searchSection.style.display = "block";
         friendRequestsSection.style.display = "none";
         console.log("🔍 Switched UI panel view to User Search Mode.");
+    });
+}
+
+if (friendRequestsButton) {
+    friendRequestsButton.addEventListener('click', function () {
+        renderFriendRequests();
     });
 }
 
@@ -438,14 +460,15 @@ function triggerLogout() {
 }
 
 function renderFriendRequests() {
-    friendRequestsSection.innerHTML = "<h3>Friend Requests:</h3>";
+    friendRequestsContainer.innerHTML = "";
+    messagingSection.style.display = "none";
+    searchSection.style.display = "none";
+    friendRequestsSection.style.display = "block";
+
     if (!pendingRequests || pendingRequests.length === 0) {
         let noRequestsText = document.createElement("p");
         noRequestsText.innerText = "No Pending Friend Requests. You're all caught up!";
-        friendRequestsSection.appendChild(noRequestsText);
-        friendRequestsSection.style.display = "block";
-        messagingSection.style.display = "none";
-        searchSection.style.display = "none";
+        friendRequestsContainer.appendChild(noRequestsText);
         return;
     }
 
@@ -469,11 +492,9 @@ function renderFriendRequests() {
         displayNameBtn.addEventListener('click', function () {
             currentChatPartner = pendingFriendRequest.username;
             document.getElementById("chatHistory").innerHTML = "";
-
             messagingSection.style.display = "block";
             searchSection.style.display = "none";
             friendRequestsSection.style.display = "none";
-
             socket.send(JSON.stringify({
                 action: "request_chat_history",
                 target: pendingFriendRequest.username
@@ -484,6 +505,12 @@ function renderFriendRequests() {
         acceptBtn.addEventListener('click', function () {
             socket.send(JSON.stringify({ action: "accept_friend_request", from_user: pendingFriendRequest.username }));
             pendingRequests = pendingRequests.filter(r => r.username !== pendingFriendRequest.username);
+            if (!friends.includes(pendingFriendRequest.username)) {
+                friends.push(pendingFriendRequest.username);
+            }
+            if (lastSearchResults.length > 0) {
+                renderDiscoveredUsers(lastSearchResults);
+            }
             renderFriendRequests();
         });
 
@@ -493,15 +520,11 @@ function renderFriendRequests() {
             renderFriendRequests();
         });
 
-        friendRequestsSection.appendChild(displayNameBtn);
-        friendRequestsSection.appendChild(usernameDisplay);
-        friendRequestsSection.appendChild(acceptBtn);
-        friendRequestsSection.appendChild(declineBtn);
+        friendRequestsContainer.appendChild(displayNameBtn);
+        friendRequestsContainer.appendChild(usernameDisplay);
+        friendRequestsContainer.appendChild(acceptBtn);
+        friendRequestsContainer.appendChild(declineBtn);
     });
-
-    friendRequestsSection.style.display = "block";
-    messagingSection.style.display = "none";
-    searchSection.style.display = "none";
 }
 
 const userSearchInput = document.getElementById("userSearchInput");
@@ -520,6 +543,7 @@ if (userSearchInput) {
 if (messagingSection && searchSection) {
     messagingSection.style.display = "block";
     searchSection.style.display = "none";
+    friendRequestsSection.style.display = "none";
 }
 
 document.getElementById("messageInput").addEventListener("input", function () {
