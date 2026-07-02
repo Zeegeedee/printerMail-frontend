@@ -57,7 +57,7 @@ socket.onmessage = function (event) {
                         localStorage.setItem("rememberToken", parsedData.remember_token);
                     }
                     localStorage.setItem("sessionUser", parsedData.user);
-                    sessionStorage.removeItem("sessionToken");
+                    sessionStorage.setItem("sessionToken", parsedData.token);
                 } else {
                     sessionStorage.setItem("sessionToken", parsedData.token);
                     sessionStorage.setItem("sessionUser", parsedData.user);
@@ -251,6 +251,7 @@ function renderDiscoveredUsers(usersArray) {
         sendFriendRequestButton.className = "friend-request-btn";
 
         let sentRequests = sentRequestsList;
+        let declineInSearchButton;
 
         if (friends.includes(friend.username)) {
             sendFriendRequestButton.innerText = "Friends! 👥";
@@ -266,7 +267,7 @@ function renderDiscoveredUsers(usersArray) {
                 renderDiscoveredUsers(lastSearchResults);
             });
 
-            let declineInSearchButton = document.createElement("button");
+            declineInSearchButton = document.createElement("button");
             declineInSearchButton.className = "decline-friend-request-btn";
             declineInSearchButton.innerText = "Decline ❌";
             declineInSearchButton.addEventListener('click', function () {
@@ -303,7 +304,9 @@ function renderDiscoveredUsers(usersArray) {
 
         searchResultsContainer.appendChild(userButton);
         searchResultsContainer.appendChild(sendFriendRequestButton);
-        searchResultsContainer.appendChild(declineInSearchButton);
+        if (declineInSearchButton) {
+            searchResultsContainer.appendChild(declineInSearchButton);
+        }
         searchResultsContainer.appendChild(userUsernameDisplay);
     });
 }
