@@ -1,9 +1,11 @@
 let currentChatPartner = "";
 let pendingRequests = [];
+let sentRequestsList = [];
 let friends = [];
 let lastSearchResults = [];
 let loggedInUser = "";
 const localChatLogs = {};
+
 
 const HF_SPACE_HOST = "zeegeedee-zynctalk-backend.hf.space"; 
 const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -248,10 +250,32 @@ function renderDiscoveredUsers(usersArray) {
         let sendFriendRequestButton = document.createElement("button");
         sendFriendRequestButton.className = "friend-request-btn";
 
+        let sentRequests = sentRequestsList;
+
         if (friends.includes(friend.username)) {
             sendFriendRequestButton.innerText = "Friends! 👥";
             sendFriendRequestButton.disabled = true;
         } else if (pendingRequests.some(r => r.username === friend.username)) {
+            sendFriendRequestButton.innerText = "Accept Friend Request ✅";
+            sendFriendRequestButton.addEventListener('click', function () {
+                socket.send(JSON.stringify({ action: "accept_friend_request", from_user: friend.username }));
+                pendingRequests = pendingRequests.filter(r => r.username !== friend.username);
+                if (!friends.includes(friend.username)) {
+                    friends.push(friend.username);
+                }
+                renderDiscoveredUsers(lastSearchResults);
+            });
+
+            let declineInSearchButton = document.createElement("button");
+            declineInSearchButton.className = "decline-friend-request-btn";
+            declineInSearchButton.innerText = "Decline ❌";
+            declineInSearchButton.addEventListener('click', function () {
+                socket.send(JSON.stringify({ action: "decline_friend_request", from_user: friend.username }));
+                pendingRequests = pendingRequests.filter(r => r.username !== friend.username);
+                renderDiscoveredUsers(lastSearchResults);
+                renderDiscoveredUsers(lastSearchResults);
+            });
+        } else if (sentRequests.includes(friend.username)) {
             sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
             sendFriendRequestButton.disabled = true;
         } else {
@@ -260,6 +284,7 @@ function renderDiscoveredUsers(usersArray) {
                 socket.send(JSON.stringify({ action: "send_friend_request", target: friend.username }));
                 sendFriendRequestButton.innerText = "Friend Request Sent! 👥✓";
                 sendFriendRequestButton.disabled = true;
+                sentRequestsList.push(friend.username);
             });
         }
 
@@ -277,8 +302,9 @@ function renderDiscoveredUsers(usersArray) {
         });
 
         searchResultsContainer.appendChild(userButton);
-        searchResultsContainer.appendChild(userUsernameDisplay);
         searchResultsContainer.appendChild(sendFriendRequestButton);
+        searchResultsContainer.appendChild(declineInSearchButton);
+        searchResultsContainer.appendChild(userUsernameDisplay);
     });
 }
 
@@ -532,7 +558,7 @@ if (userSearchInput) {
     userSearchInput.addEventListener('input', function () {
         let typedText = userSearchInput.value.trim();
         if (typedText.length === 0) {
-            searchResultsContainer.innerHTML = "";
+            socket.send(JSON.stringify({ "action": "search", "query": "" }));
             return;
         }
         socket.send(JSON.stringify({ "action": "search", "query": typedText }));
